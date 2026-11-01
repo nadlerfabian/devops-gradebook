@@ -17,9 +17,11 @@ temporary failing assertion followed by a successful repair. Python linting and
 coverage checks passed locally and on GitHub. The owner supplied screenshots
 showing that a failed required lint check blocked merging and that fixing the
 violation restored passing checks and an enabled merge button.
-The weighted-grade calculation module is implemented and locally tested on the
-current branch; its GitHub CI run is pending. Login, gradebook HTTP endpoints,
-database storage, `/ready`, `/metrics`, and deployment are not implemented yet.
+The weighted-grade calculation was merged in PR #3. User, course, assessment,
+enrollment, and grade models now reuse its validation rules. The owner reports
+that lint, formatting, and the coverage-enabled test suite passed locally for
+the models change; its GitHub CI verification is pending. Login, gradebook HTTP
+endpoints, storage, `/ready`, `/metrics`, and deployment are not implemented yet.
 
 ## Agreed application scope
 
@@ -136,6 +138,7 @@ when a Dockerfile exists.
 ## Documentation and workflow
 
 - [Project scope](docs/PROJECT_SCOPE.md)
+- [Data model and planned relationship rules](docs/DATA_MODEL.md)
 - [Course acceptance criteria](docs/requirements/ACCEPTANCE_CRITERIA.md)
 - [Course source review](docs/requirements/SOURCE_REVIEW.md)
 - [Contribution and pull request workflow](CONTRIBUTING.md)
