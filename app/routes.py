@@ -1,5 +1,5 @@
 """HTTP endpoints for Gradebook."""
-
+import os
 from flask import Blueprint, current_app, jsonify
 
 bp = Blueprint("main", __name__)
