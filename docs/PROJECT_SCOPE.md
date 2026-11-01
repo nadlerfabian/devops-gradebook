@@ -1,10 +1,11 @@
 # Gradebook project scope
 
 Status: agreed MVP requirements; initial application foundation is in progress.
-The `/health` foundation passed local and GitHub checks. Weighted-grade
-calculation and its validation/rounding tests now pass locally; CI for that
-change is pending. Course/student APIs, login, and persistence are not yet
-implemented.
+The `/health` foundation passed local and GitHub checks, and the weighted-grade
+calculation was merged in PR #3. Validated user/course/assessment/enrollment/grade
+records have now passed local checks according to the owner; CI for the models
+change is pending. Storage, relationship/permission enforcement, course/student
+APIs, and login are not yet implemented.
 
 This project is a small web application for managing course grades, built for
 the FHGR CDS212 DevOps final project. The main deliverable is a reproducible

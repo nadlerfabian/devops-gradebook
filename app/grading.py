@@ -18,6 +18,22 @@ def _require_finite_decimal(value: Decimal, field: str) -> None:
         raise ValueError(f"{field} must be a finite Decimal")
 
 
+def validate_weight(weight: Decimal) -> None:
+    """Require a positive decimal percentage; totals are checked separately."""
+    _require_finite_decimal(weight, "Weight")
+    if weight <= 0:
+        raise ValueError("Weight must be greater than zero")
+
+
+def validate_grade(grade: Decimal) -> None:
+    """Require a Swiss-scale grade with at most two decimal places."""
+    _require_finite_decimal(grade, "Grade")
+    if not Decimal("1") <= grade <= Decimal("6"):
+        raise ValueError("Grade must be between 1 and 6")
+    if grade.as_tuple().exponent < -2:
+        raise ValueError("Grade must have at most two decimal places")
+
+
 def calculate_weighted_average(assessments: list[AssessmentGrade]) -> Decimal | None:
     """Return a two-decimal result, or None when the course is incomplete.
 
@@ -26,16 +42,9 @@ def calculate_weighted_average(assessments: list[AssessmentGrade]) -> Decimal | 
     missing grades, no assessments, or weights not totaling 100 return None.
     """
     for assessment in assessments:
-        _require_finite_decimal(assessment.weight, "Weight")
-        if assessment.weight <= 0:
-            raise ValueError("Weight must be greater than zero")
-
+        validate_weight(assessment.weight)
         if assessment.grade is not None:
-            _require_finite_decimal(assessment.grade, "Grade")
-            if not Decimal("1") <= assessment.grade <= Decimal("6"):
-                raise ValueError("Grade must be between 1 and 6")
-            if assessment.grade.as_tuple().exponent < -2:
-                raise ValueError("Grade must have at most two decimal places")
+            validate_grade(assessment.grade)
 
     if not assessments:
         return None
