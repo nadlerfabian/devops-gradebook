@@ -17,9 +17,11 @@ changes directly to `main` or force-push it. Configure branch protection to
 require PRs and passing CI; these GitHub settings are not established merely by
 writing this document.
 
-The repository is currently bootstrapping documentation. CI and branch protection
-must still be configured and verified. Keep the first PR open until its checks
-and merge requirements are settled; do not describe missing CI as passing.
+Documentation CI and protection of `main` were established with the first PR,
+as reported by the project owner. Python lint/test/coverage checks are now being
+introduced. Add their check names to the required branch checks after the first
+successful run, before merging application changes. Do not describe unverified
+or missing checks as passing.
 
 ## Names and commits
 

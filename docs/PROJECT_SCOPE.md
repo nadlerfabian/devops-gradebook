@@ -1,6 +1,8 @@
 # Gradebook project scope
 
-Status: agreed MVP requirements; application implementation has not started.
+Status: agreed MVP requirements; initial application foundation is in progress.
+The `/health` endpoint and its first tests work locally; gradebook features are
+not implemented yet.
 
 This project is a small web application for managing course grades, built for
 the FHGR CDS212 DevOps final project. The main deliverable is a reproducible
