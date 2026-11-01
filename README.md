@@ -14,8 +14,9 @@ The repository contains project planning, documentation CI, and a minimal Flask
 application with a `/health` endpoint. The project owner verified the expected
 response in the browser and reported two passing automated tests, including a
 temporary failing assertion followed by a successful repair. Python linting and
-coverage checks passed locally; their GitHub Actions configuration is awaiting
-its first run on this branch.
+coverage checks passed locally and on GitHub. The owner supplied screenshots
+showing that a failed required lint check blocked merging and that fixing the
+violation restored passing checks and an enabled merge button.
 Login, grading, database storage, `/ready`, `/metrics`, and deployment are not
 implemented yet.
 
@@ -93,7 +94,8 @@ whether every requirement is tested or include the `wsgi.py` entry point.
 The project owner verified these checks locally: Ruff passed, all four Python
 files were already formatted, and both tests passed with 100% line coverage of
 the current small `app` package (minimum gate: 80%). This is not evidence of
-coverage for future gradebook features. GitHub CI verification is still pending.
+coverage for future gradebook features. The owner also supplied evidence of
+passing Documentation, Lint, and Test checks on GitHub.
 
 The GitHub workflow runs Documentation, Lint (ruff), and Test (Python 3.12) jobs
 independently. Python jobs install dependencies on fresh Ubuntu runners using
@@ -107,13 +109,14 @@ when a Dockerfile exists.
 - [Course acceptance criteria](docs/requirements/ACCEPTANCE_CRITERIA.md)
 - [Course source review](docs/requirements/SOURCE_REVIEW.md)
 - [Contribution and pull request workflow](CONTRIBUTING.md)
+- [CI gate demonstration evidence](docs/evidence/README.md)
 
 Changes use short-lived branches and pull requests into `main`. The project's
 course checklist requires at least five merged PRs with meaningful descriptions
-and passing CI. Documentation CI is configured; the owner reports that `main`
-protection requires pull requests and the Documentation check. After their first
-successful run, add the Lint (ruff) and Test (Python 3.12) checks to branch
-protection before merging application changes. Required operational endpoints are
+and passing CI. The owner's PR screenshots show Documentation, Lint (ruff), and
+Test (Python 3.12) as required checks, with merging blocked while lint fails.
+Keep these required checks enabled for future application changes.
+Required operational endpoints are
 `/health`, `/ready`, and `/metrics` on port 8000.
 
 ## Author and AI assistance
