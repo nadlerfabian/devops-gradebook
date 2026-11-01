@@ -3,9 +3,10 @@
 Status: agreed MVP requirements; initial application foundation is in progress.
 The `/health` foundation passed local and GitHub checks, and the weighted-grade
 calculation was merged in PR #3. Validated user/course/assessment/enrollment/grade
-records have now passed local checks according to the owner; CI for the models
-change is pending. Storage, relationship/permission enforcement, course/student
-APIs, and login are not yet implemented.
+records were merged in PR #4. In-memory operations now enforce relationships,
+ownership, and student result access, with local checks passing according to
+the owner; CI for storage is pending. Flask integration, authentication,
+course/student APIs, and database persistence are not yet implemented.
 
 This project is a small web application for managing course grades, built for
 the FHGR CDS212 DevOps final project. The main deliverable is a reproducible

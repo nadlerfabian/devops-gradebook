@@ -1,10 +1,10 @@
 # Gradebook data model
 
-The records in `app/models.py` define the shape of the app's data. This change
-does not yet store records or expose them through HTTP. The project owner
-reports that local lint, formatting, and the coverage-enabled test suite passed
-after adding these models and extracting shared grading validators. GitHub CI
-verification for this change is pending.
+The records in `app/models.py` define the shape of the app's data. The models
+were merged in PR #4 after the owner reported green CI. In-memory storage is
+now implemented in `app/repository.py`. The owner reports that local lint,
+formatting, and coverage-enabled tests passed; GitHub CI for storage is pending.
+It is not yet connected to Flask routes or a login session.
 
 ## Records and identifiers
 
@@ -44,10 +44,10 @@ The User model holds a hash but does not generate or verify one. Future account
 provisioning must generate real password hashes. Model-test placeholders are
 not usable login credentials. Login and session handling remain unimplemented.
 
-## Rules for the next storage step
+## Relationship and access rules in storage
 
-A single record cannot verify whether a related record exists. The repository
-and service layer must enforce these rules across the stored records:
+A single record cannot verify whether a related record exists. The in-memory
+repository implements these rules across the stored records:
 
 - Usernames are unique.
 - A course owner exists and is a lecturer.
@@ -59,6 +59,51 @@ and service layer must enforce these rules across the stored records:
 - Only the owning lecturer may manage the course and its records; students
   can read only their own authorized results.
 
-These are expected behavior for later work, not implemented guarantees of the
-current dataclasses. The first implementation will use in-memory storage,
-followed by PostgreSQL through a compatible storage interface.
+These guarantees come from repository operations, not the dataclasses alone.
+Tests exercise successful operations, denied operations, cross-course isolation,
+duplicate enrollment, and grade correction; the owner reports local tests pass.
+
+## In-memory repository
+
+`InMemoryGradebookRepository` keeps records in private Python dictionaries.
+It allocates user/course/assessment IDs. Enrollment keys are `(course_id,
+student_id)`; grade keys are `(assessment_id, student_id)`. Re-enrollment returns
+the existing enrollment, while a valid correction replaces a grade under the
+same key. Invalid corrections leave the previous grade intact.
+
+Public application operations include creating/listing courses and assessments,
+enrolling students, listing enrollments, recording/correcting grades, reading
+authorized grade lists, and calculating a student's average. The average is
+computed from current records using the existing calculation function; it is
+not a separately stored value that could become stale after correction.
+
+Names/IDs/grade values are validated through the existing models. Usernames are
+unique by exact string equality in this internal implementation. Username
+normalization and login lookup will be specified with authentication.
+
+Internal account provisioning uses `create_user` and accepts an already created
+password hash; it does not hash passwords or expose public registration. Tests
+use placeholder hashes, not usable credentials.
+
+Operations take an `actor_id`. This must come from a trusted authenticated
+session in future HTTP routes. Accepting a client-supplied actor ID would let a
+caller impersonate another user; permission checks alone are not authentication.
+Login, sessions, and safe response serialization are not yet implemented.
+
+A reentrant lock keeps operations coherent between threads in one process.
+Returned records are immutable, and returned lists are new lists, so callers
+cannot change stored records by editing a list result. Private storage is an
+internal implementation detail, not an API for routes to access directly.
+
+Errors distinguish missing records (`LookupError`), forbidden operations
+(`PermissionError`), and invalid/conflicting input (`ValueError`). HTTP routes
+will map these to appropriate status codes without exposing internal data.
+
+Every repository instance starts empty. All records disappear when that
+instance/process ends; separate workers or replicas do not share records.
+Use a single shared repository instance per application while developing in
+memory, and one worker. PostgreSQL will later supply shared persistent storage
+behind compatible operations. The `healthy()` method currently returns True
+because there is no external database; `/ready` is not wired up yet.
+
+See [ADR 0002](adr/0002-in-memory-repository.md) for alternatives and limitations.

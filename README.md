@@ -17,11 +17,12 @@ temporary failing assertion followed by a successful repair. Python linting and
 coverage checks passed locally and on GitHub. The owner supplied screenshots
 showing that a failed required lint check blocked merging and that fixing the
 violation restored passing checks and an enabled merge button.
-The weighted-grade calculation was merged in PR #3. User, course, assessment,
-enrollment, and grade models now reuse its validation rules. The owner reports
-that lint, formatting, and the coverage-enabled test suite passed locally for
-the models change; its GitHub CI verification is pending. Login, gradebook HTTP
-endpoints, storage, `/ready`, `/metrics`, and deployment are not implemented yet.
+The weighted-grade calculation and validated models were merged in PRs #3–#4.
+In-memory operations now enforce relationships, course ownership, enrollment,
+grade corrections, and access to student results. The owner reports local lint,
+formatting, and coverage-enabled tests passed; CI for storage is pending.
+The repository is not connected to Flask or login yet. Gradebook HTTP endpoints,
+database persistence, `/ready`, `/metrics`, and deployment are not implemented.
 
 ## Agreed application scope
 
@@ -144,6 +145,7 @@ when a Dockerfile exists.
 - [Contribution and pull request workflow](CONTRIBUTING.md)
 - [CI gate demonstration evidence](docs/evidence/README.md)
 - [ADR 0001: decimal grade calculation](docs/adr/0001-decimal-grade-calculation.md)
+- [ADR 0002: in-memory repository](docs/adr/0002-in-memory-repository.md)
 
 Changes use short-lived branches and pull requests into `main`. The project's
 course checklist requires at least five merged PRs with meaningful descriptions
@@ -159,8 +161,8 @@ GitHub project owner: [nadlerfabian](https://github.com/nadlerfabian).
 
 Codex assisted with reviewing the local course material, compiling the
 requirements, drafting repository documentation, and writing the initial Flask
-application skeleton, weighted-grade calculation, tests, and decision record for
-explanation and review.
+application skeleton, grading, validated models, in-memory storage, tests, and
+decision records for explanation and review.
 The project owner reviews decisions and performs setup, Git, and operational
 steps with explanations. This declaration will be updated as the project grows.
 
