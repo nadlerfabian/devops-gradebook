@@ -3,8 +3,9 @@
 The records in `app/models.py` define the shape of the app's data. The models
 were merged in PR #4 after the owner reported green CI. In-memory storage is
 now implemented in `app/repository.py`. The owner reports that local lint,
-formatting, and coverage-enabled tests passed; GitHub CI for storage is pending.
-It is not yet connected to Flask routes or a login session.
+formatting, and coverage-enabled tests passed, and PR #5 was merged.
+The operational-endpoints branch connects storage to Flask readiness checking;
+login sessions and gradebook HTTP routes are not yet implemented.
 
 ## Records and identifiers
 
@@ -104,6 +105,10 @@ instance/process ends; separate workers or replicas do not share records.
 Use a single shared repository instance per application while developing in
 memory, and one worker. PostgreSQL will later supply shared persistent storage
 behind compatible operations. The `healthy()` method currently returns True
-because there is no external database; `/ready` is not wired up yet.
+because there is no external database. The operational-endpoints branch wires
+one repository into `app.extensions["repository"]` per Flask app. `/ready` calls
+its `healthy()` method, returning 503 for an unavailable dependency or exception;
+`/health` remains independent of storage. The owner reports passing local tests,
+lint, formatting, and browser checks; GitHub CI for this integration is pending.
 
 See [ADR 0002](adr/0002-in-memory-repository.md) for alternatives and limitations.

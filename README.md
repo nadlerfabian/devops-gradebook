@@ -20,9 +20,12 @@ violation restored passing checks and an enabled merge button.
 The weighted-grade calculation and validated models were merged in PRs #3–#4.
 In-memory operations now enforce relationships, course ownership, enrollment,
 grade corrections, and access to student results. The owner reports local lint,
-formatting, and coverage-enabled tests passed; CI for storage is pending.
-The repository is not connected to Flask or login yet. Gradebook HTTP endpoints,
-database persistence, `/ready`, `/metrics`, and deployment are not implemented.
+formatting, and coverage-enabled tests passed, and PR #5 was merged.
+The operational-endpoints branch connects one repository to each Flask app and
+adds `/ready` and `/metrics`. The owner reports passing local lint, formatting,
+and coverage-enabled tests, and verified all three endpoints in the browser,
+including an increasing request counter. GitHub CI for this change is pending.
+Login, gradebook HTTP endpoints, database persistence, and deployment are not implemented.
 
 ## Agreed application scope
 
@@ -67,6 +70,30 @@ the expected JSON is `{"status":"ok","version":"0.0.0-dev"}`. Press Ctrl+C in
 the server terminal to stop it. The Flask development server is for local use;
 production startup will be added with containerization.
 
+### Operational endpoints
+
+| Endpoint | Purpose | Response |
+|---|---|---|
+| `/health` | Process liveness, independent of storage | 200, status and version |
+| `/ready` | Storage availability | 200 ready; 503 not_ready on failure |
+| `/metrics` | Prometheus HTTP measurements | 200, Prometheus text format |
+
+In-memory storage is ready without a database. The readiness route calls the
+repository's `healthy()` method; a later PostgreSQL backend must actually check
+database connectivity. Exceptions produce a generic 503 response and log message.
+
+`app/monitoring.py` records `flask_http_request_total` and
+`flask_http_request_duration_seconds` (histogram buckets, count, and sum).
+Labels identify the HTTP method, route template, and response status. Status
+labels allow error rates to be calculated; histogram buckets support latency
+percentiles later in Prometheus. Unknown URLs share `unmatched`, unusual methods
+share `OTHER`, and raw URLs/query strings are never labels. Metrics scrapes are
+excluded from application traffic. Each app instance has its own registry.
+
+Storage and metrics are process-local. Use one worker for the in-memory version;
+shared database storage and metrics support for multiple workers need separate
+implementation before increasing the worker count.
+
 ### Automated tests
 
 With the virtual environment active, install development dependencies and run:
@@ -81,8 +108,10 @@ The tests use Flask's test client, so no running server is required. They check
 the health response with both the default version and an environment-supplied
 version. The project owner reported `2 passed` both before and after coverage
 tooling was added, and demonstrated a deliberate assertion failure and repair.
-The weighted-grades change adds 38 grading cases, bringing the current local
-suite to 40 passing tests.
+The owner reported 40 passing tests at the weighted-grades milestone. Later
+changes add model, repository, readiness, and metrics tests. Run the commands
+below for the current count and coverage. The owner reports passing local
+operational-endpoint checks; GitHub CI for this change is pending.
 
 ### Weighted-grade calculation
 
@@ -128,7 +157,7 @@ grading module's local checks also passed: six Python files already formatted,
 40 tests passed, and 100% line coverage of the current `app` package (minimum
 gate: 80%). This is not evidence of coverage for future gradebook features.
 The owner supplied evidence of passing Documentation, Lint, and Test checks on
-GitHub for the foundation PR; CI for the weighted-grades change is pending.
+GitHub for the foundation PR; subsequent grading, model, and storage PRs were merged.
 
 The GitHub workflow runs Documentation, Lint (ruff), and Test (Python 3.12) jobs
 independently. Python jobs install dependencies on fresh Ubuntu runners using
@@ -161,7 +190,7 @@ GitHub project owner: [nadlerfabian](https://github.com/nadlerfabian).
 
 Codex assisted with reviewing the local course material, compiling the
 requirements, drafting repository documentation, and writing the initial Flask
-application skeleton, grading, validated models, in-memory storage, tests, and
+application skeleton, grading, validated models, in-memory storage, operational endpoints, tests, and
 decision records for explanation and review.
 The project owner reviews decisions and performs setup, Git, and operational
 steps with explanations. This declaration will be updated as the project grows.
