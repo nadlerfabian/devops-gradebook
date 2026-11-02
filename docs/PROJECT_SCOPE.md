@@ -5,8 +5,11 @@ The `/health` foundation passed local and GitHub checks, and the weighted-grade
 calculation was merged in PR #3. Validated user/course/assessment/enrollment/grade
 records were merged in PR #4. In-memory operations now enforce relationships,
 ownership, and student result access, with local checks passing according to
-the owner; CI for storage is pending. Flask integration, authentication,
-course/student APIs, and database persistence are not yet implemented.
+the owner, and PR #5 was merged. The operational-endpoints branch adds a shared
+repository per Flask app, readiness checking, and HTTP metrics. The owner reports
+passing local quality checks and browser verification; GitHub CI is pending.
+Authentication, course/student APIs, and database persistence are not
+yet implemented.
 
 This project is a small web application for managing course grades, built for
 the FHGR CDS212 DevOps final project. The main deliverable is a reproducible
