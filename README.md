@@ -24,8 +24,12 @@ formatting, and coverage-enabled tests passed, and PR #5 was merged.
 The operational-endpoints branch connects one repository to each Flask app and
 adds `/ready` and `/metrics`. The owner reports passing local lint, formatting,
 and coverage-enabled tests, and verified all three endpoints in the browser,
-including an increasing request counter. GitHub CI for this change is pending.
-Login, gradebook HTTP endpoints, database persistence, and deployment are not implemented.
+including an increasing request counter. PR #6 was merged.
+The authentication branch adds a login form, signed sessions, and logout for
+demo accounts configured through environment variables. The owner verified both
+roles and logout in the browser and reported 99% line coverage. GitHub CI for
+authentication is pending. Gradebook HTTP endpoints, database
+persistence, and deployment are not implemented.
 
 ## Agreed application scope
 
@@ -94,6 +98,12 @@ Storage and metrics are process-local. Use one worker for the in-memory version;
 shared database storage and metrics support for multiple workers need separate
 implementation before increasing the worker count.
 
+### Login
+
+See [authentication setup and design](docs/AUTHENTICATION.md) for PowerShell
+commands to configure the signing key and synthetic demo passwords. Open
+`/auth/login` to sign in and `/auth/me` to see the account's role.
+
 ### Automated tests
 
 With the virtual environment active, install development dependencies and run:
@@ -111,7 +121,8 @@ tooling was added, and demonstrated a deliberate assertion failure and repair.
 The owner reported 40 passing tests at the weighted-grades milestone. Later
 changes add model, repository, readiness, and metrics tests. Run the commands
 below for the current count and coverage. The owner reports passing local
-operational-endpoint checks; GitHub CI for this change is pending.
+operational-endpoint checks, and PR #6 was merged. Authentication adds further
+tests. The owner reported 99% line coverage for the application.
 
 ### Weighted-grade calculation
 
@@ -169,6 +180,7 @@ when a Dockerfile exists.
 
 - [Project scope](docs/PROJECT_SCOPE.md)
 - [Data model and planned relationship rules](docs/DATA_MODEL.md)
+- [Authentication setup and design](docs/AUTHENTICATION.md)
 - [Course acceptance criteria](docs/requirements/ACCEPTANCE_CRITERIA.md)
 - [Course source review](docs/requirements/SOURCE_REVIEW.md)
 - [Contribution and pull request workflow](CONTRIBUTING.md)
@@ -190,7 +202,8 @@ GitHub project owner: [nadlerfabian](https://github.com/nadlerfabian).
 
 Codex assisted with reviewing the local course material, compiling the
 requirements, drafting repository documentation, and writing the initial Flask
-application skeleton, grading, validated models, in-memory storage, operational endpoints, tests, and
+application skeleton, grading, validated models, in-memory storage, operational
+endpoints, authentication, tests, and
 decision records for explanation and review.
 The project owner reviews decisions and performs setup, Git, and operational
 steps with explanations. This declaration will be updated as the project grows.

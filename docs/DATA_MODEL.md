@@ -5,7 +5,7 @@ were merged in PR #4 after the owner reported green CI. In-memory storage is
 now implemented in `app/repository.py`. The owner reports that local lint,
 formatting, and coverage-enabled tests passed, and PR #5 was merged.
 The operational-endpoints branch connects storage to Flask readiness checking;
-login sessions and gradebook HTTP routes are not yet implemented.
+the authentication branch adds sessions. Gradebook HTTP routes are planned.
 
 ## Records and identifiers
 
@@ -41,9 +41,10 @@ record rather than bypassing checks by assigning fields afterward.
 - User object representations omit the password-hash field. This is not a safe
   public serialization format: future responses must explicitly select fields.
 
-The User model holds a hash but does not generate or verify one. Future account
-provisioning must generate real password hashes. Model-test placeholders are
-not usable login credentials. Login and session handling remain unimplemented.
+The User model holds a hash but does not generate or verify one. On the
+authentication branch, `app/accounts.py` generates real password hashes and
+`app/auth.py` verifies them. Model-test placeholders are not usable login
+credentials. The owner verified both demo accounts through the login form.
 
 ## Relationship and access rules in storage
 
@@ -79,17 +80,18 @@ computed from current records using the existing calculation function; it is
 not a separately stored value that could become stale after correction.
 
 Names/IDs/grade values are validated through the existing models. Usernames are
-unique by exact string equality in this internal implementation. Username
-normalization and login lookup will be specified with authentication.
+unique by exact string equality. Login lookup is also exact and case-sensitive;
+usernames are not silently normalized.
 
 Internal account provisioning uses `create_user` and accepts an already created
-password hash; it does not hash passwords or expose public registration. Tests
-use placeholder hashes, not usable credentials.
+password hash; it does not itself hash passwords or expose public registration.
+`provision_account` supplies real hashes for login-capable accounts. Older model
+and repository tests use placeholder hashes, not usable credentials.
 
-Operations take an `actor_id`. This must come from a trusted authenticated
-session in future HTTP routes. Accepting a client-supplied actor ID would let a
-caller impersonate another user; permission checks alone are not authentication.
-Login, sessions, and safe response serialization are not yet implemented.
+Operations take an `actor_id`. Authentication loads the account identified by
+the signed session into `g.user`. Future gradebook routes must use
+`login_required` and `g.user.id`,
+keeping repository access checks. `/auth/me` returns ID, username, and role.
 
 A reentrant lock keeps operations coherent between threads in one process.
 Returned records are immutable, and returned lists are new lists, so callers
@@ -109,6 +111,6 @@ because there is no external database. The operational-endpoints branch wires
 one repository into `app.extensions["repository"]` per Flask app. `/ready` calls
 its `healthy()` method, returning 503 for an unavailable dependency or exception;
 `/health` remains independent of storage. The owner reports passing local tests,
-lint, formatting, and browser checks; GitHub CI for this integration is pending.
+lint, formatting, and browser checks, and PR #6 was merged.
 
 See [ADR 0002](adr/0002-in-memory-repository.md) for alternatives and limitations.
