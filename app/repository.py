@@ -48,6 +48,16 @@ class InMemoryGradebookRepository:
             self._courses[course.id] = course
             return course
 
+    def get_user(self, user_id: int) -> User:
+        """Resolve a trusted session ID internally."""
+        with self._lock:
+            return self._user(user_id)
+
+    def find_user_by_username(self, username: str) -> User | None:
+        """Look up an exact, case-sensitive username for internal login handling."""
+        with self._lock:
+            return next((user for user in self._users.values() if user.username == username), None)
+
     def list_courses(self, actor_id: int) -> list[Course]:
         with self._lock:
             actor = self._user(actor_id)

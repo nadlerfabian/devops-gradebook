@@ -7,9 +7,11 @@ records were merged in PR #4. In-memory operations now enforce relationships,
 ownership, and student result access, with local checks passing according to
 the owner, and PR #5 was merged. The operational-endpoints branch adds a shared
 repository per Flask app, readiness checking, and HTTP metrics. The owner reports
-passing local quality checks and browser verification; GitHub CI is pending.
-Authentication, course/student APIs, and database persistence are not
-yet implemented.
+passing local quality checks and browser verification, and PR #6 was merged.
+The authentication branch adds hashed passwords, a login form, signed sessions,
+logout, and CSRF protection. The owner verified both roles and logout in the
+browser. Course/student HTTP APIs
+and database persistence are not yet implemented.
 
 This project is a small web application for managing course grades, built for
 the FHGR CDS212 DevOps final project. The main deliverable is a reproducible
@@ -56,8 +58,9 @@ can enforce access to that student's own results.
 - The server determines a signed-in user's identity and role; a user cannot
   grant themselves lecturer access by changing a request parameter.
 
-Account provisioning and session handling will be specified during technical
-design. The login approach above is agreed, not implemented or security-tested.
+Demo accounts are created at startup from environment variables. Protected
+requests use signed sessions. See [authentication](AUTHENTICATION.md) for
+configuration and the local role check.
 
 ## MVP capabilities
 
