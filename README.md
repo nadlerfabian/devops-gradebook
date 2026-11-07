@@ -29,7 +29,9 @@ The authentication branch adds a login form, signed sessions, and logout for
 demo accounts configured through environment variables. The owner verified both
 roles and logout in the browser and reported 99% line coverage. Course,
 enrollment, assessment, and grade routes are available. This branch adds
-PostgreSQL storage selected by `DATABASE_URL`, with verification pending.
+PostgreSQL storage selected by `DATABASE_URL` passed local and CI checks.
+The owner verified that both Docker Compose services become healthy and that a
+synthetic grade of `5.25` survives `docker compose down` and `docker compose up --wait`.
 
 ## Agreed application scope
 
@@ -72,7 +74,45 @@ Create the environment only once; activate it in each new terminal session.
 Open `http://127.0.0.1:8000/health`. With no `APP_VERSION` environment variable,
 the expected JSON is `{"status":"ok","version":"0.0.0-dev"}`. Press Ctrl+C in
 the server terminal to stop it. The Flask development server is for local use;
-production startup will be added with containerization.
+the Docker image runs Gunicorn.
+
+### Local Docker Compose stack
+
+Start Docker Desktop. Copy `.env.example` to `.env` and replace the four
+credential placeholders. Use a random hexadecimal value for the database
+password because Compose inserts it into the database URL. Generate a
+different random value for the session signing key. The two demo passwords
+are the ones you enter on the login page.
+
+```powershell
+Copy-Item .env.example .env
+python -c "import secrets; print(secrets.token_hex(32))"
+docker compose config --quiet
+docker compose up --build --wait
+docker compose ps
+```
+
+Copy the template only when creating `.env`. Run the Python command once
+per random value. Compose uses `.env` to configure the containers. The real
+file is excluded from Git and the Docker build context.
+
+Compose starts PostgreSQL 16 first and waits for its health check. The web
+container then connects to `db:5432` on the Compose network and serves the app
+at `http://127.0.0.1:8000`. Check `/health`, `/ready`, and `/auth/login`.
+The Dockerfile installs dependencies in a build stage and runs the app as
+`gradebook` in the final stage. Gunicorn uses one worker so metrics stay
+consistent within the container.
+
+```powershell
+docker run --rm gradebook:local whoami
+docker compose down
+docker compose up --wait
+```
+
+`whoami` should print `gradebook`. To check persistence, create a synthetic
+record through the app before running `down`, then read it after `up`.
+Compose stores database files in the named `gradebook-data` volume, which
+`down` preserves. Keep the same database password while reusing the volume.
 
 ### Operational endpoints
 
