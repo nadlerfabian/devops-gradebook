@@ -124,6 +124,12 @@ class InMemoryGradebookRepository:
             ]
 
     def get_average(self, actor_id: int, course_id: int, student_id: int) -> Decimal | None:
+        return self.get_result(actor_id, course_id, student_id)[1]
+
+    def get_result(
+        self, actor_id: int, course_id: int, student_id: int
+    ) -> tuple[list[Grade], Decimal | None]:
+        """Read grades and their weighted average together."""
         with self._lock:
             grades = self.get_grades(actor_id, course_id, student_id)
             grades_by_assessment = {grade.assessment_id: grade.value for grade in grades}
@@ -132,7 +138,7 @@ class InMemoryGradebookRepository:
                 for assessment in self._assessments.values()
                 if assessment.course_id == course_id
             ]
-            return calculate_weighted_average(inputs)
+            return grades, calculate_weighted_average(inputs)
 
     def _user(self, user_id: int) -> User:
         # Reject bool/float aliases: Python dictionary keys True and 1 are equal.

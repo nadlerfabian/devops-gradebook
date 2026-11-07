@@ -1,5 +1,7 @@
 """Exercise course permissions through Flask's HTTP interface."""
 
+from decimal import Decimal
+
 import pytest
 
 from app import create_app
@@ -175,3 +177,69 @@ def test_invalid_assessment_input_is_rejected(setup, payload):
 
     assert client.post(url, json=payload, headers=CSRF_HEADER).status_code == 400
     assert client.get(url).get_json() == []
+
+
+@pytest.fixture
+def grade_scenario(setup):
+    app, owner, other, student, course, _ = setup
+    repo = app.extensions["repository"]
+    project = repo.create_assessment(owner.id, course.id, "Project", Decimal("40"))
+    exam = repo.create_assessment(owner.id, course.id, "Exam", Decimal("60"))
+    return app, owner, other, student, course, project, exam
+
+
+def test_grade_entry_and_correction_update_the_students_result(grade_scenario):
+    app, owner, _, student, course, project, exam = grade_scenario
+    lecturer_client = signed_in_client(app, owner)
+    student_client = signed_in_client(app, student)
+    result_url = f"{COURSES}/{course.id}/results/{student.id}"
+    project_url = f"/api/assessments/{project.id}/grades/{student.id}"
+    exam_url = f"/api/assessments/{exam.id}/grades/{student.id}"
+
+    response = lecturer_client.put(project_url, json={"value": "5.00"}, headers=CSRF_HEADER)
+    assert response.status_code == 200
+    incomplete = student_client.get(result_url).get_json()
+    assert incomplete["grades"] == [response.get_json()]
+    assert incomplete["average"] is None
+
+    assert (
+        lecturer_client.put(exam_url, json={"value": "4"}, headers=CSRF_HEADER).status_code == 200
+    )
+    assert student_client.get(result_url).get_json()["average"] == "4.40"
+
+    assert (
+        lecturer_client.put(exam_url, json={"value": "5"}, headers=CSRF_HEADER).status_code == 200
+    )
+    corrected = student_client.get(result_url).get_json()
+    assert len(corrected["grades"]) == 2
+    assert corrected["average"] == "5.00"
+    assert lecturer_client.get(result_url).get_json() == corrected
+
+
+def test_grade_routes_keep_results_private_and_writes_owner_only(grade_scenario):
+    app, owner, other, student, course, project, _ = grade_scenario
+    repo = app.extensions["repository"]
+    peer = repo.create_user("peer", Role.STUDENT, "unused-test-hash")
+    repo.enroll_student(owner.id, course.id, peer.id)
+    result_url = f"{COURSES}/{course.id}/results/{student.id}"
+    grade_url = f"/api/assessments/{project.id}/grades/{student.id}"
+
+    assert app.test_client().get(result_url).status_code == 401
+    for user in (other, peer):
+        assert signed_in_client(app, user).get(result_url).status_code == 403
+    for user in (other, student):
+        client = signed_in_client(app, user)
+        assert client.put(grade_url, json={"value": "5"}, headers=CSRF_HEADER).status_code == 403
+    assert signed_in_client(app, owner).put(grade_url, json={"value": "5"}).status_code == 400
+
+
+@pytest.mark.parametrize("value", [5.25, "5.255", "7", "NaN"])
+def test_invalid_grade_correction_preserves_existing_grade(grade_scenario, value):
+    app, owner, _, student, course, project, _ = grade_scenario
+    app.extensions["repository"].set_grade(owner.id, project.id, student.id, Decimal("5"))
+    client = signed_in_client(app, owner)
+    grade_url = f"/api/assessments/{project.id}/grades/{student.id}"
+
+    assert client.put(grade_url, json={"value": value}, headers=CSRF_HEADER).status_code == 400
+    result = client.get(f"{COURSES}/{course.id}/results/{student.id}").get_json()
+    assert [grade["value"] for grade in result["grades"]] == ["5"]

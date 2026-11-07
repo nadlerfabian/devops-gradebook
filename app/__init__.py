@@ -8,6 +8,7 @@ from flask import Flask
 from app.accounts import provision_demo_accounts
 from app.auth import register_auth
 from app.course_routes import bp as courses_bp
+from app.grade_routes import bp as grades_bp
 from app.monitoring import register_metrics
 from app.repository import InMemoryGradebookRepository
 from app.routes import bp
@@ -37,5 +38,6 @@ def create_app(*, repository=None, config=None) -> Flask:
         provision_demo_accounts(app)
     app.register_blueprint(bp)
     app.register_blueprint(courses_bp)
+    app.register_blueprint(grades_bp)
     register_auth(app)
     return app
