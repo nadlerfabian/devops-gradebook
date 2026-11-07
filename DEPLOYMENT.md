@@ -34,8 +34,25 @@ PostgreSQL, and the [login guide](docs/AUTHENTICATION.md) covers demo accounts.
 5. Deploy the Blueprint. Open the new service and wait for the first deploy
    to be live. Record the public URL and deployed commit from the dashboard.
 6. Confirm service auto-deploy is Off. Disable Blueprint Auto Sync after
-   provisioning so later Blueprint changes are applied deliberately. The
-   GitHub Actions deployment workflow will be added after this first check.
+   provisioning so later Blueprint changes are applied deliberately.
+
+## Deploy after CI
+
+1. In the Render web service settings, copy the Deploy Hook URL.
+2. In GitHub **Settings → Secrets and variables → Actions**, save the hook as
+   the repository secret `RENDER_DEPLOY_HOOK`. Save the public HTTPS service
+   URL as the repository variable `APP_URL`.
+3. Merge the deployment workflow through a green pull request. The first
+   automatic deploy starts after the resulting push to `main` passes CI.
+4. Open the **Deploy to Render** run in GitHub Actions. Confirm that it
+   requests the tested commit and reports that the same commit is live and
+   ready. In Render, confirm the deploy event and matching SHA.
+
+The workflow ignores PR runs and failed CI runs. If a newer commit is already
+on `main`, it skips the older revision. Render rebuilds the tested commit
+from its Dockerfile. The smoke check retries `/health` and `/ready` until the
+new commit is serving requests. It performs read-only checks on the public
+service. Grade and enrollment behavior is covered by the CI tests.
 
 The Free web service can spin down when idle. This deployment uses one
 Gunicorn worker and in-memory storage for synthetic data, so records reset
@@ -55,6 +72,8 @@ expire after 30 days. See [Render free service limits](https://render.com/docs/f
 | `SESSION_COOKIE_SECURE` | `true` on Render | No | Restricts session cookies to HTTPS. |
 | `DEMO_LECTURER_PASSWORD` | Entered during Blueprint creation | Yes | Creates the synthetic lecturer at startup. |
 | `DEMO_STUDENT_PASSWORD` | Entered during Blueprint creation | Yes | Creates the synthetic student at startup. |
+| `RENDER_DEPLOY_HOOK` | GitHub Actions secret | Yes | Allows the workflow to request a deploy. |
+| `APP_URL` | GitHub Actions variable | No | Public HTTPS service URL for smoke checks. |
 
 Gunicorn uses one worker and writes access logs to standard output. The
 current startup command uses Gunicorn's default error log level.
@@ -76,12 +95,15 @@ health response with the public URL visible for course evidence.
 
 ## Rollback and diagnosis
 
-On the service's **Deploys** page, select the last known good deploy and
+If deployment must pause during incident response, disable **Deploy to Render**
+in the GitHub Actions tab and cancel any in-progress deploy in Render. On the
+service's **Deploys** page, select the last known good deploy and
 choose **Rollback** if its build artifact is available. Otherwise, choose
 **Manual Deploy → Deploy a specific commit** and provide the known good SHA.
 Repeat the health and readiness checks and confirm the live version. A rollback
 restarts the in-memory app. A rollback of application code also leaves any
 external PostgreSQL data as it was at the time of rollback.
+Re-enable the GitHub workflow once a corrected revision is ready to deploy.
 
 | Symptom | Likely cause | Action |
 |---|---|---|
@@ -90,6 +112,7 @@ external PostgreSQL data as it was at the time of rollback.
 | First request takes a while | Free service is waking up | Wait for the service to become live, then retry `/health`. |
 | Login fails after deployment | Missing or incorrect demo settings | Verify both demo passwords and the signing key in Render settings, then redeploy if changed. |
 | Healthy response reports an older version | New deploy is pending or failed | Check the deploy status and compare its commit to the health response. |
+| Deploy hook is rejected | Hook was regenerated or the secret is wrong | Update the GitHub secret from the Render service settings and rerun the deployment. |
 
 For an outage, the project owner checks Render deploy logs and GitHub Actions.
 If a deploy remains unhealthy after retrying, restore the last known good

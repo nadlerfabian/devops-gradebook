@@ -266,7 +266,9 @@ grading, authentication, role checks, course and grade routes, in-memory and
 PostgreSQL storage, and operational endpoints. Its contributions include pytest
 tests, the Dockerfile and Compose configuration, and the GitHub Actions
 workflow for linting, tests, coverage, and the container build. It also drafted
-the Render Blueprint and deployment runbook.
+the Render Blueprint, deployment runbook, and GitHub Actions deployment
+workflow. The owner provisioned the first Render service and captured the
+public health response.
 
 The project owner defines and reviews the scope and grading rules, reviews the
 changes, and performs the Git and GitHub steps. The owner ran the local tests
