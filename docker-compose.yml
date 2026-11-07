@@ -1,0 +1,34 @@
+services:
+  web:
+    build: .
+    image: gradebook:local
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      DATABASE_URL: "postgresql://gradebook:${GRADEBOOK_DB_PASSWORD:?Set GRADEBOOK_DB_PASSWORD in .env}@db:5432/gradebook"
+      SECRET_KEY: "${GRADEBOOK_SECRET_KEY:?Set GRADEBOOK_SECRET_KEY in .env}"
+      DEMO_LECTURER_PASSWORD: "${GRADEBOOK_LECTURER_PASSWORD:?Set GRADEBOOK_LECTURER_PASSWORD in .env}"
+      DEMO_STUDENT_PASSWORD: "${GRADEBOOK_STUDENT_PASSWORD:?Set GRADEBOOK_STUDENT_PASSWORD in .env}"
+      APP_VERSION: "${APP_VERSION:-0.0.0-local}"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: gradebook
+      POSTGRES_USER: gradebook
+      POSTGRES_PASSWORD: "${GRADEBOOK_DB_PASSWORD:?Set GRADEBOOK_DB_PASSWORD in .env}"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "gradebook", "-d", "gradebook"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - gradebook-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  gradebook-data:

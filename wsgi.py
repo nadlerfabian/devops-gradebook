@@ -1,4 +1,4 @@
-"""Entry point for Flask and, later, the production server."""
+"""Entry point for Flask locally and Gunicorn in the container."""
 
 from app import create_app
 
