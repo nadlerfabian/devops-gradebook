@@ -30,11 +30,18 @@ class InMemoryGradebookRepository:
         """In-memory storage has no external database to check."""
         return True
 
-    def create_user(self, username: str, role: Role, password_hash: str) -> User:
+    def create_user(
+        self, username: str, role: Role, password_hash: str, *, if_missing: bool = False
+    ) -> User:
         """Provision a pre-created account internally; not a public registration API."""
         with self._lock:
-            if any(user.username == username for user in self._users.values()):
-                raise ValueError("Username already exists")
+            for user in self._users.values():
+                if user.username == username:
+                    if not if_missing:
+                        raise ValueError("Username already exists")
+                    if user.role != role:
+                        raise ValueError("Existing demo account has a different role")
+                    return user
             user = User(next(self._user_ids), username, role, password_hash)
             self._users[user.id] = user
             return user

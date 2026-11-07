@@ -10,6 +10,7 @@ from app.auth import register_auth
 from app.course_routes import bp as courses_bp
 from app.grade_routes import bp as grades_bp
 from app.monitoring import register_metrics
+from app.postgres_repository import PostgresGradebookRepository
 from app.repository import InMemoryGradebookRepository
 from app.routes import bp
 
@@ -20,6 +21,7 @@ def create_app(*, repository=None, config=None) -> Flask:
     app.config["APP_VERSION"] = os.environ.get("APP_VERSION", "0.0.0-dev")
     app.config.update(
         SECRET_KEY=os.environ.get("SECRET_KEY"),
+        DATABASE_URL=os.environ.get("DATABASE_URL"),
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
         SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE", "false").lower() == "true",
@@ -30,12 +32,16 @@ def create_app(*, repository=None, config=None) -> Flask:
     )
     if config is not None:
         app.config.update(config)
-    app.extensions["repository"] = (
-        repository if repository is not None else InMemoryGradebookRepository()
-    )
-    register_metrics(app)
+    app.extensions["repository"] = repository
     if repository is None:
+        if app.config["DATABASE_URL"]:
+            repository = PostgresGradebookRepository(app.config["DATABASE_URL"])
+            repository.initialize()
+        else:
+            repository = InMemoryGradebookRepository()
+        app.extensions["repository"] = repository
         provision_demo_accounts(app)
+    register_metrics(app)
     app.register_blueprint(bp)
     app.register_blueprint(courses_bp)
     app.register_blueprint(grades_bp)

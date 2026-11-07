@@ -1,16 +1,43 @@
 """Exercise storage behavior, relationships, and access boundaries."""
 
+import os
 from decimal import Decimal
+from uuid import uuid4
 
+import psycopg
 import pytest
+from psycopg import sql
+from psycopg.conninfo import make_conninfo
 
+from app import create_app
 from app.models import Role
+from app.postgres_repository import PostgresGradebookRepository
 from app.repository import InMemoryGradebookRepository
 
 
 @pytest.fixture
-def setup():
-    repo = InMemoryGradebookRepository()
+def postgres_url():
+    url = os.environ.get("TEST_DATABASE_URL")
+    if not url:
+        pytest.skip("Set TEST_DATABASE_URL to run PostgreSQL integration tests")
+
+    schema = f"gradebook_test_{uuid4().hex}"
+    with psycopg.connect(url) as conn:
+        conn.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(schema)))
+    try:
+        yield make_conninfo(url, options=f"-c search_path={schema}")
+    finally:
+        with psycopg.connect(url) as conn:
+            conn.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(schema)))
+
+
+@pytest.fixture(params=["memory", "postgres"])
+def setup(request):
+    if request.param == "postgres":
+        repo = PostgresGradebookRepository(request.getfixturevalue("postgres_url"))
+        repo.initialize()
+    else:
+        repo = InMemoryGradebookRepository()
     # Model placeholders are not real password hashes or usable credentials.
     owner = repo.create_user("lecturer-a", Role.LECTURER, "test-placeholder")
     outsider = repo.create_user("lecturer-b", Role.LECTURER, "test-placeholder")
@@ -21,6 +48,37 @@ def setup():
     exam = repo.create_assessment(owner.id, course.id, "Exam", Decimal("60"))
     repo.enroll_student(owner.id, course.id, student.id)
     return repo, owner, outsider, student, peer, course, project, exam
+
+
+def test_postgres_survives_app_restart(postgres_url, monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", postgres_url)
+    config = {
+        "TESTING": True,
+        "SECRET_KEY": "test-only",
+        "DEMO_LECTURER_PASSWORD": "synthetic-lecturer-password",
+        "DEMO_STUDENT_PASSWORD": "synthetic-student-password",
+    }
+    first = create_app(config=config)
+    repo = first.extensions["repository"]
+    owner = repo.find_user_by_username("lecturer")
+    student = repo.find_user_by_username("student")
+    course = repo.create_course(owner.id, "DevOps")
+    assessment = repo.create_assessment(owner.id, course.id, "Project", Decimal("100"))
+    repo.enroll_student(owner.id, course.id, student.id)
+    repo.set_grade(owner.id, assessment.id, student.id, Decimal("5.25"))
+
+    second = create_app(config=config)
+    new_repo = second.extensions["repository"]
+    assert new_repo.find_user_by_username("student") == student
+    assert new_repo.get_user(owner.id) == owner
+    assert second.test_client().get("/ready").status_code == 200
+    assert second.test_client().get("/health").status_code == 200
+    client = second.test_client()
+    with client.session_transaction() as session:
+        session["user_id"] = student.id
+    result = client.get(f"/api/courses/{course.id}/results/{student.id}")
+    assert result.status_code == 200
+    assert result.get_json()["average"] == "5.25"
 
 
 def test_enrollment_grading_and_correction_recalculate_result(setup):

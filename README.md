@@ -27,9 +27,9 @@ and coverage-enabled tests, and verified all three endpoints in the browser,
 including an increasing request counter. PR #6 was merged.
 The authentication branch adds a login form, signed sessions, and logout for
 demo accounts configured through environment variables. The owner verified both
-roles and logout in the browser and reported 99% line coverage. GitHub CI for
-authentication is pending. Gradebook HTTP endpoints, database
-persistence, and deployment are not implemented.
+roles and logout in the browser and reported 99% line coverage. Course,
+enrollment, assessment, and grade routes are available. This branch adds
+PostgreSQL storage selected by `DATABASE_URL`, with verification pending.
 
 ## Agreed application scope
 
@@ -82,9 +82,9 @@ production startup will be added with containerization.
 | `/ready` | Storage availability | 200 ready; 503 not_ready on failure |
 | `/metrics` | Prometheus HTTP measurements | 200, Prometheus text format |
 
-In-memory storage is ready without a database. The readiness route calls the
-repository's `healthy()` method; a later PostgreSQL backend must actually check
-database connectivity. Exceptions produce a generic 503 response and log message.
+In-memory storage is ready without a database. With PostgreSQL, the readiness
+route runs a database query. Exceptions produce a generic 503 response and log
+message.
 
 `app/monitoring.py` records `flask_http_request_total` and
 `flask_http_request_duration_seconds` (histogram buckets, count, and sum).
@@ -94,9 +94,24 @@ percentiles later in Prometheus. Unknown URLs share `unmatched`, unusual methods
 share `OTHER`, and raw URLs/query strings are never labels. Metrics scrapes are
 excluded from application traffic. Each app instance has its own registry.
 
-Storage and metrics are process-local. Use one worker for the in-memory version;
-shared database storage and metrics support for multiple workers need separate
-implementation before increasing the worker count.
+In-memory storage and metrics are process-local. Use one worker for the
+in-memory version. PostgreSQL shares records across processes. Metrics still
+need separate support before increasing the worker count.
+
+### PostgreSQL storage
+
+Leave `DATABASE_URL` unset for in-memory storage. Set it to a PostgreSQL
+connection URL to use persistent storage. On startup the app connects and
+creates the initial tables if needed. PostgreSQL must be available at startup.
+When demo credentials are configured, the app inserts missing demo accounts.
+Existing accounts keep their IDs and password hashes across app restarts.
+Changing the demo password variables does not rotate existing passwords.
+
+The coverage check runs repository tests against memory and PostgreSQL.
+Set `TEST_DATABASE_URL` to a disposable PostgreSQL 16 database whose test user
+can create schemas. The tests create a temporary schema per case and remove
+it afterward. Leave the app's `DATABASE_URL` unset in the test terminal.
+Without `TEST_DATABASE_URL`, pytest skips the PostgreSQL cases.
 
 ### Login
 

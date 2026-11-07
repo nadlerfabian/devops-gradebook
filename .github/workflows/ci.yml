@@ -50,6 +50,22 @@ jobs:
   test:
     name: Test (Python 3.12)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: gradebook_test
+          POSTGRES_USER: gradebook_test
+          POSTGRES_PASSWORD: test-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U gradebook_test -d gradebook_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://gradebook_test:test-only@localhost:5432/gradebook_test
 
     steps:
       - name: Check out repository
