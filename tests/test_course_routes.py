@@ -114,3 +114,64 @@ def test_enrollment_rejects_missing_accounts_and_lecturers(setup):
 
     assert client.put(f"{url}/999", headers=CSRF_HEADER).status_code == 404
     assert client.put(f"{url}/{other.id}", headers=CSRF_HEADER).status_code == 400
+
+
+def test_owner_creates_assessment_and_enrolled_student_can_read_it(setup):
+    app, owner, other, student, visible, hidden = setup
+    url = f"{COURSES}/{visible.id}/assessments"
+    client = signed_in_client(app, owner)
+
+    response = client.post(url, json={"name": " Project ", "weight": "40.50"}, headers=CSRF_HEADER)
+    assert response.status_code == 201
+    assessment = response.get_json()
+    assert assessment == {
+        "id": assessment["id"],
+        "course_id": visible.id,
+        "name": "Project",
+        "weight": "40.50",
+    }
+    assert client.get(url).get_json() == [assessment]
+    student_client = signed_in_client(app, student)
+    assert student_client.get(url).get_json() == [assessment]
+    assert student_client.get(f"{COURSES}/{hidden.id}/assessments").status_code == 403
+    assert signed_in_client(app, other).get(url).status_code == 403
+
+
+def test_assessment_creation_checks_permissions_and_course(setup):
+    app, owner, other, student, visible, _ = setup
+    url = f"{COURSES}/{visible.id}/assessments"
+    payload = {"name": "Project", "weight": "40"}
+    for user in (other, student):
+        response = signed_in_client(app, user).post(url, json=payload, headers=CSRF_HEADER)
+        assert response.status_code == 403
+
+    client = signed_in_client(app, owner)
+    assert client.post(url, json=payload).status_code == 400
+    assert client.get(f"{COURSES}/999/assessments").status_code == 404
+    assert (
+        client.post(f"{COURSES}/999/assessments", json=payload, headers=CSRF_HEADER).status_code
+        == 404
+    )
+    assert client.get(url).get_json() == []
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        [],
+        {"weight": "40"},
+        {"name": " ", "weight": "40"},
+        {"name": "Project", "weight": 40.5},
+        {"name": "Project", "weight": "0"},
+        {"name": "Project", "weight": "NaN"},
+        {"name": "Project", "weight": "1e-99999999"},
+        {"name": "Project", "weight": "1" * 33},
+    ],
+)
+def test_invalid_assessment_input_is_rejected(setup, payload):
+    app, owner, _, _, visible, _ = setup
+    client = signed_in_client(app, owner)
+    url = f"{COURSES}/{visible.id}/assessments"
+
+    assert client.post(url, json=payload, headers=CSRF_HEADER).status_code == 400
+    assert client.get(url).get_json() == []
