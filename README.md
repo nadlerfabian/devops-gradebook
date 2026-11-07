@@ -1,5 +1,7 @@
 # Gradebook
 
+[![CI status on main](https://github.com/nadlerfabian/devops-gradebook/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/nadlerfabian/devops-gradebook/actions/workflows/ci.yml)
+
 A small web application for lecturers to manage course assessments and grades,
 and for students to view their own results. The MVP uses the Swiss 1–6 grading
 scale and weighted assessments.
@@ -228,8 +230,9 @@ GitHub for the foundation PR; subsequent grading, model, and storage PRs were me
 The GitHub workflow runs Documentation, Lint (ruff), and Test (Python 3.12) jobs
 independently. Python jobs install dependencies on fresh Ubuntu runners using
 Python 3.12 and pip caching. A successful test job saves `coverage.xml` as the
-downloadable `coverage-report` artifact. Docker build/scanning jobs will be added
-when a Dockerfile exists.
+downloadable `coverage-report` artifact. The Container build job waits for lint
+and tests to pass, builds the image, checks that it runs as a non-root user,
+and starts it to verify `/health`. The smoke test uses in-memory storage.
 
 ## Documentation and workflow
 
@@ -255,13 +258,19 @@ Required operational endpoints are
 
 GitHub project owner: [nadlerfabian](https://github.com/nadlerfabian).
 
-Codex assisted with reviewing the local course material, compiling the
-requirements, drafting repository documentation, and writing the initial Flask
-application skeleton, grading, validated models, in-memory storage, operational
-endpoints, authentication, tests, and
-decision records for explanation and review.
-The project owner reviews decisions and performs setup, Git, and operational
-steps with explanations. This declaration will be updated as the project grows.
+Codex helped review the course material and draft the acceptance checklist,
+documentation, and decision records. It also drafted Flask code for weighted
+grading, authentication, role checks, course and grade routes, in-memory and
+PostgreSQL storage, and operational endpoints. Its contributions include pytest
+tests, the Dockerfile and Compose configuration, and the GitHub Actions
+workflow for linting, tests, coverage, and the container build.
+
+The project owner defines and reviews the scope and grading rules, reviews the
+changes, and performs the Git and GitHub steps. The owner ran the local tests
+against PostgreSQL 17, verified lecturer and student login in the browser,
+and demonstrated that a grade survives recreating both Compose containers.
+Codex explains the implementation and commands as the project progresses so
+the owner can explain the design decisions and reproduce the checks.
 
 ## License
 
