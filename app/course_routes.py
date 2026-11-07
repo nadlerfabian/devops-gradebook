@@ -33,3 +33,18 @@ def create_course():
     except ValueError:
         return jsonify(error="Provide a course name"), 400
     return jsonify(course_json(course)), 201
+
+
+@bp.put("/<int:course_id>/enrollments/<int:student_id>")
+@login_required
+def enroll_student(course_id, student_id):
+    repository = current_app.extensions["repository"]
+    try:
+        enrollment = repository.enroll_student(g.user.id, course_id, student_id)
+    except PermissionError:
+        return jsonify(error="Only the course owner can enroll students"), 403
+    except LookupError:
+        return jsonify(error="Course or student account not found"), 404
+    except ValueError:
+        return jsonify(error="Only student accounts can be enrolled"), 400
+    return jsonify(course_id=enrollment.course_id, student_id=enrollment.student_id)

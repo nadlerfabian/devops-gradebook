@@ -78,3 +78,39 @@ def test_course_creation_requires_csrf_token(setup):
     app, lecturer, *_ = setup
     response = signed_in_client(app, lecturer).post(COURSES, json={"name": "Databases"})
     assert response.status_code == 400
+
+
+def test_enrollment_makes_course_visible_to_student(setup):
+    app, _, owner, student, visible, hidden = setup
+    student_client = signed_in_client(app, student)
+    assert [course["id"] for course in student_client.get(COURSES).get_json()] == [visible.id]
+
+    url = f"{COURSES}/{hidden.id}/enrollments/{student.id}"
+    owner_client = signed_in_client(app, owner)
+    for _ in range(2):
+        response = owner_client.put(url, headers=CSRF_HEADER)
+        assert response.status_code == 200
+        assert response.get_json() == {"course_id": hidden.id, "student_id": student.id}
+    assert {course["id"] for course in student_client.get(COURSES).get_json()} == {
+        visible.id,
+        hidden.id,
+    }
+
+
+def test_enrollment_requires_course_owner_and_csrf(setup):
+    app, owner, other, student, visible, _ = setup
+    url = f"{COURSES}/{visible.id}/enrollments/{student.id}"
+
+    for user in (other, student):
+        response = signed_in_client(app, user).put(url, headers=CSRF_HEADER)
+        assert response.status_code == 403
+    assert signed_in_client(app, owner).put(url).status_code == 400
+
+
+def test_enrollment_rejects_missing_accounts_and_lecturers(setup):
+    app, owner, other, _, visible, _ = setup
+    client = signed_in_client(app, owner)
+    url = f"{COURSES}/{visible.id}/enrollments"
+
+    assert client.put(f"{url}/999", headers=CSRF_HEADER).status_code == 404
+    assert client.put(f"{url}/{other.id}", headers=CSRF_HEADER).status_code == 400
