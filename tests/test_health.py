@@ -5,6 +5,7 @@ from app import create_app
 
 def test_health_returns_ok_with_default_version(monkeypatch):
     monkeypatch.delenv("APP_VERSION", raising=False)
+    monkeypatch.delenv("RENDER_GIT_COMMIT", raising=False)
     app = create_app()
     app.config["TESTING"] = True
     client = app.test_client()
@@ -18,6 +19,7 @@ def test_health_returns_ok_with_default_version(monkeypatch):
 
 def test_health_reports_version_from_environment(monkeypatch):
     monkeypatch.setenv("APP_VERSION", "1.2.3")
+    monkeypatch.setenv("RENDER_GIT_COMMIT", "a" * 40)
     app = create_app()
     app.config["TESTING"] = True
     client = app.test_client()
@@ -26,3 +28,15 @@ def test_health_reports_version_from_environment(monkeypatch):
 
     assert response.status_code == 200
     assert response.get_json() == {"status": "ok", "version": "1.2.3"}
+
+
+def test_health_reports_deployed_commit_on_render(monkeypatch):
+    monkeypatch.delenv("APP_VERSION", raising=False)
+    commit = "b" * 40
+    monkeypatch.setenv("RENDER_GIT_COMMIT", commit)
+    app = create_app()
+
+    response = app.test_client().get("/health")
+
+    assert response.status_code == 200
+    assert response.get_json() == {"status": "ok", "version": commit}

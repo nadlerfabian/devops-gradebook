@@ -236,6 +236,8 @@ and starts it to verify `/health`. The smoke test uses in-memory storage.
 
 ## Documentation and workflow
 
+- [Render deployment and rollback runbook](DEPLOYMENT.md)
+
 - [Project scope](docs/PROJECT_SCOPE.md)
 - [Data model and planned relationship rules](docs/DATA_MODEL.md)
 - [Authentication setup and design](docs/AUTHENTICATION.md)
@@ -263,7 +265,8 @@ documentation, and decision records. It also drafted Flask code for weighted
 grading, authentication, role checks, course and grade routes, in-memory and
 PostgreSQL storage, and operational endpoints. Its contributions include pytest
 tests, the Dockerfile and Compose configuration, and the GitHub Actions
-workflow for linting, tests, coverage, and the container build.
+workflow for linting, tests, coverage, and the container build. It also drafted
+the Render Blueprint and deployment runbook.
 
 The project owner defines and reviews the scope and grading rules, reviews the
 changes, and performs the Git and GitHub steps. The owner ran the local tests
