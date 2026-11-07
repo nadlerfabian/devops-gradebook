@@ -1,0 +1,73 @@
+name: Deploy to Render
+
+on:
+  workflow_run:
+    workflows: [CI]
+    branches: [main]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy and verify
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: gradebook-render
+      cancel-in-progress: false
+    env:
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
+      APP_URL: ${{ vars.APP_URL }}
+
+    steps:
+      - name: Check that this commit is still current
+        id: revision
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          if [[ "$DEPLOY_SHA" != "$main_sha" ]]; then
+            echo "Skipping $DEPLOY_SHA because main has moved to $main_sha."
+            exit 0
+          fi
+          echo "current=true" >> "$GITHUB_OUTPUT"
+
+      - name: Request deployment of the tested commit
+        if: steps.revision.outputs.current == 'true'
+        shell: bash
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [[ -z "$RENDER_DEPLOY_HOOK" || "$APP_URL" != https://* ]]; then
+            echo "::error::Configure the RENDER_DEPLOY_HOOK secret and HTTPS APP_URL variable."
+            exit 1
+          fi
+          curl --fail --silent --show-error --max-time 20 --output /dev/null \
+            --get --data-urlencode "ref=$DEPLOY_SHA" "$RENDER_DEPLOY_HOOK"
+          echo "Requested deployment of $DEPLOY_SHA."
+
+      - name: Verify public liveness and readiness
+        if: steps.revision.outputs.current == 'true'
+        shell: bash
+        run: |
+          base_url="${APP_URL%/}"
+          for attempt in {1..24}; do
+            if curl --fail --silent --max-time 10 "$base_url/health" \
+                | jq -e --arg sha "$DEPLOY_SHA" '.status == "ok" and .version == $sha' >/dev/null \
+              && curl --fail --silent --max-time 10 "$base_url/ready" \
+                | jq -e '.status == "ready"' >/dev/null; then
+              echo "Commit $DEPLOY_SHA is live and ready at $base_url."
+              exit 0
+            fi
+            echo "Attempt $attempt/24: waiting for $DEPLOY_SHA to become live and ready."
+            sleep 10
+          done
+          echo "::error::The expected commit did not become live and ready within the retry window."
+          exit 1
