@@ -1,5 +1,7 @@
 # Gradebook
 
+[![CI status on main](https://github.com/nadlerfabian/devops-gradebook/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/nadlerfabian/devops-gradebook/actions/workflows/ci.yml)
+
 A small web application for lecturers to manage course assessments and grades,
 and for students to view their own results. The MVP uses the Swiss 1–6 grading
 scale and weighted assessments.
@@ -228,8 +230,9 @@ GitHub for the foundation PR; subsequent grading, model, and storage PRs were me
 The GitHub workflow runs Documentation, Lint (ruff), and Test (Python 3.12) jobs
 independently. Python jobs install dependencies on fresh Ubuntu runners using
 Python 3.12 and pip caching. A successful test job saves `coverage.xml` as the
-downloadable `coverage-report` artifact. Docker build/scanning jobs will be added
-when a Dockerfile exists.
+downloadable `coverage-report` artifact. The Container build job waits for lint
+and tests to pass, builds the image, checks that it runs as a non-root user,
+and starts it to verify `/health`. The smoke test uses in-memory storage.
 
 ## Documentation and workflow
 
