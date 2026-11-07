@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: devops-gradebook
+    runtime: docker
+    plan: free
+    region: frankfurt
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeployTrigger: 'off'
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEMO_LECTURER_PASSWORD
+        sync: false
+      - key: DEMO_STUDENT_PASSWORD
+        sync: false

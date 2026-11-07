@@ -18,7 +18,9 @@ from app.routes import bp
 def create_app(*, repository=None, config=None) -> Flask:
     """Build a new application instance."""
     app = Flask(__name__)
-    app.config["APP_VERSION"] = os.environ.get("APP_VERSION", "0.0.0-dev")
+    app.config["APP_VERSION"] = (
+        os.environ.get("APP_VERSION") or os.environ.get("RENDER_GIT_COMMIT") or "0.0.0-dev"
+    )
     app.config.update(
         SECRET_KEY=os.environ.get("SECRET_KEY"),
         DATABASE_URL=os.environ.get("DATABASE_URL"),
