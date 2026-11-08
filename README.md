@@ -237,6 +237,7 @@ and starts it to verify `/health`. The smoke test uses in-memory storage.
 ## Documentation and workflow
 
 - [Render deployment and rollback runbook](DEPLOYMENT.md)
+- [Local Terraform container setup](terraform/README.md)
 
 - [Project scope](docs/PROJECT_SCOPE.md)
 - [Data model and planned relationship rules](docs/DATA_MODEL.md)
@@ -267,7 +268,8 @@ PostgreSQL storage, and operational endpoints. Its contributions include pytest
 tests, the Dockerfile and Compose configuration, and the GitHub Actions
 workflow for linting, tests, coverage, and the container build. It also drafted
 the Render Blueprint, deployment runbook, and GitHub Actions deployment
-workflow. The owner provisioned the first Render service and captured the
+workflow, plus the local Terraform container configuration. The owner
+provisioned the first Render service and captured the
 public health response.
 
 The project owner defines and reviews the scope and grading rules, reviews the
